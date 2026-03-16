@@ -9,7 +9,7 @@ const program = new Command();
 program
   .name('team-manager')
   .description('Multi-Agent Collaboration Framework - CLI Management Tool (Basic Version)')
-  .version('0.0.6');
+  .version('0.0.7');
 
 // ============================================
 // TUI Interactive Interface

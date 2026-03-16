@@ -15,7 +15,7 @@ If you use both Feishu and OpenClaw, Team Manager can help you:
 - Bind Feishu groups to teams for message routing without manually configuring complex openclaw.json
 - View and manage all Agent statuses with one command
 
-**Current Features (v0.0.3):**
+**Current Features:**
 - TUI interactive interface
 - Agent creation and configuration
 - Team creation and management
@@ -23,7 +23,7 @@ If you use both Feishu and OpenClaw, Team Manager can help you:
 - Feishu group binding
 - System reset and backup/restore
 
-**Planned Features:**
+**Development Roadmap:**
 - Job and skill pack management
 - Task creation and assignment
 - Task status workflow
