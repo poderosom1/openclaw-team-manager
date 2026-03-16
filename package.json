@@ -1,13 +1,13 @@
 {
-  "name": "team-manager",
+  "name": "openclaw-team-manager",
   "version": "0.0.5",
   "description": "Multi-Agent Collaboration Framework - CLI Management Tool (Basic Version: Agent Creation + Feishu Binding)",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
   "bin": {
-    "team-manager": "./dist/bin/team-manager.js",
-    "team-setup": "./dist/bin/team-setup.js",
-    "team-uninstall": "./dist/bin/team-uninstall.js"
+    "openclaw-team-manager": "./dist/bin/team-manager.js",
+    "openclaw-team-setup": "./dist/bin/team-setup.js",
+    "openclaw-team-uninstall": "./dist/bin/team-uninstall.js"
   },
   "scripts": {
     "build": "tsc",

@@ -276,9 +276,4 @@ program
   });
 
 // Export program, bin entry calls parse()
-export { program };tus.command');
-    await statusCommand();
-  });
-
-// Export program, bin entry calls parse()
 export { program };

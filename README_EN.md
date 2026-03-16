@@ -41,7 +41,7 @@ If you use both Feishu and OpenClaw, Team Manager can help you:
 ## Installation
 
 ```bash
-npm install -g team-manager
+npm install -g openclaw-team-manager
 ```
 
 Or build from source:
@@ -55,7 +55,7 @@ npm install && npm run build
 ## Uninstall
 
 ```bash
-team-manager-uninstall
+openclaw-team-uninstall
 ```
 
 This command removes Team Manager's workspace history. The database and Agent workspaces are preserved in the OpenClaw directory.
@@ -64,21 +64,21 @@ This command removes Team Manager's workspace history. The database and Agent wo
 
 ```bash
 # Start TUI interface (recommended)
-team-manager tui
+openclaw-team-manager tui
 
 # Or use command line
-team-manager setup init                    # Initialize
-team-manager create-dept --name "Dev Team" # Create team
-team-manager create-agent --name "Manager" --role manager --dept <dept_id>
-team-manager status                        # View status
+openclaw-team-manager setup init                    # Initialize
+openclaw-team-manager create-dept --name "Dev Team" # Create team
+openclaw-team-manager create-agent --name "Manager" --role manager --dept <dept_id>
+openclaw-team-manager status                        # View status
 ```
 
 ## Feishu Integration
 
 ```bash
-team-manager config-feishu --app-id cli_xxx --app-secret xxx
-team-manager bind-feishu-group --department-id <id> --group-id oc_xxx
-team-manager bind-feishu-bot --agent-id <id> --bot-id cli_xxx
+openclaw-team-manager config-feishu --app-id cli_xxx --app-secret xxx
+openclaw-team-manager bind-feishu-group --department-id <id> --group-id oc_xxx
+openclaw-team-manager bind-feishu-bot --agent-id <id> --bot-id cli_xxx
 ```
 
 ## Commands
@@ -103,6 +103,8 @@ team-manager bind-feishu-bot --agent-id <id> --bot-id cli_xxx
 | `config-feishu` | Configure Feishu app |
 | `bind-feishu-bot` | Bind Feishu Bot |
 
+**Note:** After installation, use `openclaw-team-manager` as the command, e.g. `openclaw-team-manager tui`.
+
 ## Data Storage
 
 ```
@@ -121,7 +123,7 @@ team-manager bind-feishu-bot --agent-id <id> --bot-id cli_xxx
 First-time use requires system initialization by specifying the OpenClaw workspace directory:
 
 ```bash
-team-manager tui
+openclaw-team-manager tui
 ```
 
 After startup, select or enter the `.openclaw` directory path. The system will automatically create:
@@ -142,7 +144,7 @@ A team is the organizational unit for Agents. Each team can have:
 
 **Via command line:**
 ```bash
-team-manager create-dept --name "Product Team" --id product
+openclaw-team-manager create-dept --name "Product Team" --id product
 ```
 
 ### 3. Create Agent
@@ -164,10 +166,10 @@ team-manager create-dept --name "Product Team" --id product
 **Via command line:**
 ```bash
 # Create manager
-team-manager create-agent --name "Product Manager" --role manager --dept product
+openclaw-team-manager create-agent --name "Product Manager" --role manager --dept product
 
 # Create executor
-team-manager create-agent --name "Frontend Dev" --role executor --dept product
+openclaw-team-manager create-agent --name "Frontend Dev" --role executor --dept product
 ```
 
 ### 4. Feishu Integration
@@ -182,13 +184,13 @@ team-manager create-agent --name "Frontend Dev" --role executor --dept product
 #### 4.2 Configure Feishu App
 
 ```bash
-team-manager config-feishu --app-id cli_xxx --app-secret xxx
+openclaw-team-manager config-feishu --app-id cli_xxx --app-secret xxx
 ```
 
 #### 4.3 Bind Feishu Group to Team
 
 ```bash
-team-manager bind-feishu-group --department-id product --group-id oc_xxx
+openclaw-team-manager bind-feishu-group --department-id product --group-id oc_xxx
 ```
 
 After binding, chat content from this group will be automatically routed to the team's Manager Agent.
@@ -196,7 +198,7 @@ After binding, chat content from this group will be automatically routed to the 
 #### 4.4 Bind Feishu Bot to Agent
 
 ```bash
-team-manager bind-feishu-bot --agent-id agent_xxx --bot-id cli_xxx
+openclaw-team-manager bind-feishu-bot --agent-id agent_xxx --bot-id cli_xxx
 ```
 
 After binding, the Agent can receive and send Feishu messages through this Bot.
@@ -204,7 +206,7 @@ After binding, the Agent can receive and send Feishu messages through this Bot.
 ### 5. View System Status
 
 ```bash
-team-manager status
+openclaw-team-manager status
 ```
 
 Displays:

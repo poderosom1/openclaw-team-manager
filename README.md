@@ -41,7 +41,7 @@ Team Manager 提供简洁的 TUI 交互界面，让你通过键盘操作即可�
 ## 安装
 
 ```bash
-npm install -g team-manager
+npm install -g openclaw-team-manager
 ```
 
 或从源码构建：
@@ -55,7 +55,7 @@ npm install && npm run build
 ## 卸载
 
 ```bash
-team-manager-uninstall
+openclaw-team-uninstall
 ```
 
 此命令会删除 Team Manager 的工作目录历史记录，数据库和 Agent 工作空间会保留在 OpenClaw 目录中。
@@ -64,21 +64,21 @@ team-manager-uninstall
 
 ```bash
 # 启动 TUI 交互界面（推荐）
-team-manager tui
+openclaw-team-manager tui
 
 # 或使用命令行
-team-manager setup init                    # 初始化
-team-manager create-dept --name "研发部"   # 创建团队
-team-manager create-agent --name "主管" --role manager --dept <dept_id>
-team-manager status                        # 查看状态
+openclaw-team-manager setup init                    # 初始化
+openclaw-team-manager create-dept --name "研发部"   # 创建团队
+openclaw-team-manager create-agent --name "主管" --role manager --dept <dept_id>
+openclaw-team-manager status                        # 查看状态
 ```
 
 ## 飞书集成
 
 ```bash
-team-manager config-feishu --app-id cli_xxx --app-secret xxx
-team-manager bind-feishu-group --department-id <id> --group-id oc_xxx
-team-manager bind-feishu-bot --agent-id <id> --bot-id cli_xxx
+openclaw-team-manager config-feishu --app-id cli_xxx --app-secret xxx
+openclaw-team-manager bind-feishu-group --department-id <id> --group-id oc_xxx
+openclaw-team-manager bind-feishu-bot --agent-id <id> --bot-id cli_xxx
 ```
 
 ## 命令列表
@@ -103,6 +103,8 @@ team-manager bind-feishu-bot --agent-id <id> --bot-id cli_xxx
 | `config-feishu` | 配置飞书应用 |
 | `bind-feishu-bot` | 绑定飞书 Bot |
 
+**注意：** 安装后命令为 `openclaw-team-manager`，例如 `openclaw-team-manager tui`。
+
 ## 数据存储
 
 ```
@@ -121,7 +123,7 @@ team-manager bind-feishu-bot --agent-id <id> --bot-id cli_xxx
 首次使用需要初始化系统，指定 OpenClaw 工作目录：
 
 ```bash
-team-manager tui
+openclaw-team-manager tui
 ```
 
 启动后选择或输入 `.openclaw` 目录路径，系统会自动创建：
@@ -142,7 +144,7 @@ team-manager tui
 
 **通过命令行：**
 ```bash
-team-manager create-dept --name "产品部" --id product
+openclaw-team-manager create-dept --name "产品部" --id product
 ```
 
 ### 3. 创建 Agent
@@ -164,10 +166,10 @@ team-manager create-dept --name "产品部" --id product
 **通过命令行：**
 ```bash
 # 创建管理者
-team-manager create-agent --name "产品主管" --role manager --dept product
+openclaw-team-manager create-agent --name "产品主管" --role manager --dept product
 
 # 创建执行者
-team-manager create-agent --name "前端开发" --role executor --dept product
+openclaw-team-manager create-agent --name "前端开发" --role executor --dept product
 ```
 
 ### 4. 飞书集成
@@ -182,13 +184,13 @@ team-manager create-agent --name "前端开发" --role executor --dept product
 #### 4.2 配置飞书应用
 
 ```bash
-team-manager config-feishu --app-id cli_xxx --app-secret xxx
+openclaw-team-manager config-feishu --app-id cli_xxx --app-secret xxx
 ```
 
 #### 4.3 绑定飞书群到团队
 
 ```bash
-team-manager bind-feishu-group --department-id product --group-id oc_xxx
+openclaw-team-manager bind-feishu-group --department-id product --group-id oc_xxx
 ```
 
 绑定后，该群的聊天内容会自动路由到团队的管理者 Agent。
@@ -196,7 +198,7 @@ team-manager bind-feishu-group --department-id product --group-id oc_xxx
 #### 4.4 绑定飞书 Bot 到 Agent
 
 ```bash
-team-manager bind-feishu-bot --agent-id agent_xxx --bot-id cli_xxx
+openclaw-team-manager bind-feishu-bot --agent-id agent_xxx --bot-id cli_xxx
 ```
 
 绑定后，Agent 可以通过该 Bot 接收和发送飞书消息。
@@ -204,7 +206,7 @@ team-manager bind-feishu-bot --agent-id agent_xxx --bot-id cli_xxx
 ### 5. 查看系统状态
 
 ```bash
-team-manager status
+openclaw-team-manager status
 ```
 
 显示：
