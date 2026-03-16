@@ -12,7 +12,6 @@ import { companyRepository } from '../../db/repositories/company.repo';
 import { agentRepository } from '../../db/repositories/agent.repo';
 import * as initSessionRepo from '../../db/repositories/init-session.repo';
 import { 
-  getCompanyRoot, 
   getOpenClawRoot, 
   getAgentWorkspace, 
   getAgentDir, 

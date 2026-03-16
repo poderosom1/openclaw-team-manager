@@ -7,7 +7,7 @@ import chalk from 'chalk';
 import * as fs from 'fs';
 import * as path from 'path';
 import { tuiUtils } from '../index';
-import { getDatabasePath, getOpenClawJsonPath, getOpenClawRoot, getCompanyRoot } from '../../../core/utils';
+import { getDatabasePath, getOpenClawJsonPath, getOpenClawRoot } from '../../../core/utils';
 import { getDatabase } from '../../../db';
 import * as initSessionRepo from '../../../db/repositories/init-session.repo';
 import * as configChangeRepo from '../../../db/repositories/config-change.repo';

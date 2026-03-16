@@ -225,13 +225,6 @@ export function getTeamRoot(): string {
 }
 
 /**
- * Get company directory (alias for backward compatibility)
- */
-export function getCompanyRoot(): string {
-  return getTeamRoot();
-}
-
-/**
  * Get database path
  */
 export function getDatabasePath(): string {
@@ -242,14 +235,14 @@ export function getDatabasePath(): string {
  * Get task directory
  */
 export function getTaskDir(taskId: string): string {
-  return path.join(getCompanyRoot(), 'tasks', taskId);
+  return path.join(getTeamRoot(), 'tasks', taskId);
 }
 
 /**
  * Get role flow template directory
  */
 export function getFlowsDir(): string {
-  return path.join(getCompanyRoot(), 'flows');
+  return path.join(getTeamRoot(), 'flows');
 }
 
 /**

@@ -201,7 +201,9 @@ export class AgentService {
    * Will clean up:
    * - Workspace directory
    * - Agent directory
+   * - Sessions directory
    * - openclaw.json config
+   * - Bindings
    */
   delete(id: string): { success: boolean; message: string } {
     // Cannot delete assistant
@@ -216,6 +218,9 @@ export class AgentService {
     // Remove from OpenClaw config
     removeAgentFromConfig(id);
 
+    // Remove from bindings
+    this.removeAgentBindings(id);
+
     // Record change (for undo)
     configTracker.recordAgentDelete(id, {
       id: agent.id,
@@ -225,21 +230,56 @@ export class AgentService {
       workspace: agent.workspace_path
     });
 
-    // Clean up directories
-    const workspacePath = agent.workspace_path || getAgentWorkspace(id);
-    const agentDir = getAgentDir(id);
-
-    if (fs.existsSync(workspacePath)) {
-      fs.rmSync(workspacePath, { recursive: true, force: true });
-    }
-    if (fs.existsSync(agentDir)) {
-      fs.rmSync(agentDir, { recursive: true, force: true });
-    }
+    // Delete directories
+    this.deleteAgentDirectories(id);
 
     // Delete database record
     agentRepository.delete(id);
 
     return { success: true, message: 'Agent已删除' };
+  }
+
+  /**
+   * Remove agent bindings from openclaw.json
+   */
+  private removeAgentBindings(agentId: string): void {
+    try {
+      const configPath = getOpenClawJsonPath();
+      if (!fs.existsSync(configPath)) return;
+
+      const content = fs.readFileSync(configPath, 'utf-8');
+      const config = JSON.parse(content);
+
+      if (config.bindings && Array.isArray(config.bindings)) {
+        config.bindings = config.bindings.filter(
+          (b: { agentId?: string }) => b.agentId !== agentId
+        );
+        fs.writeFileSync(configPath, JSON.stringify(config, null, 2), 'utf-8');
+      }
+    } catch (error) {
+      console.warn(`警告：移除 bindings 失败: ${error}`);
+    }
+  }
+
+  /**
+   * Delete agent directories
+   */
+  private deleteAgentDirectories(agentId: string): void {
+    const dirs = [
+      getAgentWorkspace(agentId),
+      getAgentDir(agentId),
+      getAgentSessionsDir(agentId)
+    ];
+
+    for (const dir of dirs) {
+      if (fs.existsSync(dir)) {
+        try {
+          fs.rmSync(dir, { recursive: true, force: true });
+        } catch (error) {
+          console.warn(`警告：删除目录失败 ${dir}: ${error}`);
+        }
+      }
+    }
   }
 
   /**
