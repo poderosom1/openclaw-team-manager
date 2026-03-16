@@ -24,12 +24,11 @@ If you use both Feishu and OpenClaw, Team Manager can help you:
 - System reset and backup/restore
 
 **Development Roadmap:**
-- Job and skill pack management
-- Task creation and assignment
-- Task status workflow
+- Agent task collaboration communication
+- Task workflow mechanism
+- Preset jobs and skill packs
+- Task execution monitoring and assurance
 - Multi-channel support (Discord, Telegram, etc.)
-- Inter-agent communication
-- Timeout monitoring and alerts
 
 ## Requirements
 
