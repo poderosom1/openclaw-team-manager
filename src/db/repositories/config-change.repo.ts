@@ -1,5 +1,5 @@
 /**
- * 配置变更记录仓库
+ * Config Change Repository
  */
 
 import { getDatabase } from '../index';

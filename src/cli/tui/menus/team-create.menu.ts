@@ -1,5 +1,5 @@
 /**
- * 团队创建向导
+ * Team Creation Wizard
  */
 
 import inquirer from 'inquirer';

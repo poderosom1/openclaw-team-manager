@@ -1,5 +1,5 @@
 /**
- * 职业管理菜单
+ * Job Management Menu
  */
 
 import inquirer from 'inquirer';

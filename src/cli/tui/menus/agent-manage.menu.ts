@@ -1,5 +1,5 @@
 /**
- * Agent 管理菜单
+ * Agent Management Menu
  */
 
 import inquirer from 'inquirer';

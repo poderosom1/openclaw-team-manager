@@ -1,7 +1,5 @@
 /**
  * Status Command
- * 
- * Team Manager 0.0.3 - Basic Version
  */
 
 import chalk from 'chalk';

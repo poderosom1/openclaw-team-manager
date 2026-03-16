@@ -1,8 +1,5 @@
 /**
  * Agent Guide File Generator
- * 
- * Company Manager 0.0.3 - Basic Version
- * Used for generating Agent's AGENTS.md guide files
  */
 
 import * as fs from 'fs';

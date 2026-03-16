@@ -1,9 +1,5 @@
 /**
  * OpenClaw Integration Helper Functions
- * 
- * Company Manager 0.0.3 - Basic Version
- * Provides helper methods for OpenClaw system integration
- * Follows OpenClaw official standard directory structure and config format
  */
 
 import * as fs from 'fs';

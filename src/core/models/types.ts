@@ -1,7 +1,5 @@
 /**
  * Core Type Definitions
- * 
- * Company Manager 0.0.3 - Basic Version
  */
 
 // ============================================

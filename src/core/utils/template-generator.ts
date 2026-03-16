@@ -1,7 +1,5 @@
 /**
- * 文档模板生成器
- * 
- * 用于生成各种文档模板
+ * Document Template Generator
  */
 
 import * as fs from 'fs';

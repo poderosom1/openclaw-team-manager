@@ -1,5 +1,5 @@
 /**
- * 职业服务
+ * Job Service
  */
 
 import { jobRepository } from '../../db/repositories/job.repo';

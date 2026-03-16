@@ -1,7 +1,5 @@
 /**
  * Repository Exports
- * 
- * Company Manager 0.0.3 - Basic Version
  */
 
 export { BaseRepository } from './base.repository';

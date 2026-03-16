@@ -1,5 +1,5 @@
 /**
- * 技能包服务
+ * Skill Pack Service
  */
 
 import { skillPackRepository } from '../../db/repositories/skill-pack.repo';

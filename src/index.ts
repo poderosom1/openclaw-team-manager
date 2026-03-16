@@ -1,5 +1,5 @@
 /**
- * Company Manager
+ * Team Manager
  * Multi-Agent Collaboration Framework Management Tool
  */
 

@@ -1,5 +1,5 @@
 /**
- * 职业Repository
+ * Job Repository
  */
 
 import { BaseRepository } from './base.repository';

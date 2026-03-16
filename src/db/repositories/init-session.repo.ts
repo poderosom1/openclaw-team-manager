@@ -1,5 +1,5 @@
 /**
- * 初始化会话仓库
+ * Init Session Repository
  */
 
 import { tryGetDatabase } from '../index';

@@ -1,5 +1,5 @@
 /**
- * 系统重置与恢复菜单
+ * System Reset Menu
  */
 
 import inquirer from 'inquirer';

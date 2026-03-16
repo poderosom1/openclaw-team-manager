@@ -1,5 +1,5 @@
 /**
- * 公司Repository
+ * Company Repository
  */
 
 import { BaseRepository } from './base.repository';

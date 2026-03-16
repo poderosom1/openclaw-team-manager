@@ -1,8 +1,5 @@
 /**
  * CLI Main Entry
- * 
- * Team Manager 0.0.3 - Basic Version
- * Features: Agent creation, Feishu binding, basic config management
  */
 
 import { Command } from 'commander';
@@ -12,7 +9,7 @@ const program = new Command();
 program
   .name('team-manager')
   .description('Multi-Agent Collaboration Framework - CLI Management Tool (Basic Version)')
-  .version('0.0.3');
+  .version('0.0.5');
 
 // ============================================
 // TUI Interactive Interface
@@ -275,6 +272,11 @@ program
   .description('View system status')
   .action(async () => {
     const { statusCommand } = await import('./commands/status.command');
+    await statusCommand();
+  });
+
+// Export program, bin entry calls parse()
+export { program };tus.command');
     await statusCommand();
   });
 

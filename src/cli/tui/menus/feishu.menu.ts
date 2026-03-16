@@ -1,14 +1,5 @@
 /**
- * 飞书配置菜单
- * 
- * 核心概念：
- * - 每个 Agent 可以绑定一个飞书 Bot
- * - 每个 Bot 有独立的 App ID / App Secret
- * - 配置按 Agent 维度管理
- * 
- * 配置存储：
- * - channels.feishu.accounts.<agentId> = { appId, appSecret, botName }
- * - bindings 中创建对应的路由绑定
+ * Feishu Configuration Menu
  */
 
 import inquirer from 'inquirer';
