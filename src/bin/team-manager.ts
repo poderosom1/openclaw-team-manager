@@ -1,4 +1,4 @@
-#!/usr/bin node
+#!/usr/bin/env node
 /**
  * team-manager CLI Entry Point
  */
