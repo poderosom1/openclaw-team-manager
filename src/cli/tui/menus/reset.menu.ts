@@ -333,6 +333,14 @@ async function resetSystem(): Promise<{ success: boolean; message: string; backu
       console.log(chalk.yellow(`  ⚠ ${cleanupResult.failed.length} 个文件清理失败`));
     }
 
+    // 5.6 清理 openclaw.json 中的飞书群相关配置
+    // 重置应该无条件清理所有飞书群配置，而不是依赖 config_changes 记录
+    console.log(chalk.dim('  清理飞书群配置...'));
+    const feishuConfigCleaned = cleanupFeishuGroupConfig();
+    if (feishuConfigCleaned) {
+      console.log(chalk.dim('  ✓ 已清理飞书群配置'));
+    }
+
     // 6. 清空所有数据库表数据（包括 init_sessions 和 config_changes）
     // 这样重置后需要完全重新初始化
     db.exec(`
@@ -605,4 +613,75 @@ async function listBackups(): Promise<void> {
   }
 
   console.log('');
+}
+
+/**
+ * 清理 openclaw.json 中的飞书群相关配置
+ * 
+ * 清理内容：
+ * - channels.feishu.accounts - 清空所有 agent 的飞书账户
+ * - channels.feishu.groupAllowFrom - 清空群组白名单
+ * - channels.feishu.groups - 清空群组配置
+ * - bindings - 移除所有飞书相关的绑定
+ * 
+ * @returns 是否有配置被清理
+ */
+function cleanupFeishuGroupConfig(): boolean {
+  const configPath = getOpenClawJsonPath();
+  if (!fs.existsSync(configPath)) return false;
+
+  try {
+    const content = fs.readFileSync(configPath, 'utf-8');
+    const config = JSON.parse(content);
+    let configChanged = false;
+
+    // 清理 channels.feishu.accounts
+    const channels = config.channels as Record<string, unknown> | undefined;
+    if (channels?.feishu) {
+      const feishuConfig = channels.feishu as Record<string, unknown>;
+      
+      // 清空 accounts
+      if (feishuConfig.accounts && Object.keys(feishuConfig.accounts as object).length > 0) {
+        feishuConfig.accounts = {};
+        configChanged = true;
+        console.log(chalk.dim('    - 已清空飞书账户配置'));
+      }
+
+      // 清空 groupAllowFrom
+      if (feishuConfig.groupAllowFrom && Array.isArray(feishuConfig.groupAllowFrom) && feishuConfig.groupAllowFrom.length > 0) {
+        feishuConfig.groupAllowFrom = [];
+        configChanged = true;
+        console.log(chalk.dim('    - 已清空群组白名单'));
+      }
+
+      // 清空 groups
+      if (feishuConfig.groups && Object.keys(feishuConfig.groups as object).length > 0) {
+        feishuConfig.groups = {};
+        configChanged = true;
+        console.log(chalk.dim('    - 已清空群组配置'));
+      }
+    }
+
+    // 清理飞书相关的 bindings
+    if (config.bindings && Array.isArray(config.bindings) && config.bindings.length > 0) {
+      const originalLength = config.bindings.length;
+      config.bindings = config.bindings.filter(
+        (b: { match?: { channel?: string } }) => b.match?.channel !== 'feishu'
+      );
+      
+      if (config.bindings.length < originalLength) {
+        configChanged = true;
+        console.log(chalk.dim(`    - 已移除 ${originalLength - config.bindings.length} 个飞书绑定`));
+      }
+    }
+
+    if (configChanged) {
+      fs.writeFileSync(configPath, JSON.stringify(config, null, 2), 'utf-8');
+    }
+
+    return configChanged;
+  } catch (e) {
+    console.warn('清理飞书群配置失败:', e);
+    return false;
+  }
 }
