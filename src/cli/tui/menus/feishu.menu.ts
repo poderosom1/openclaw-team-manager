@@ -869,7 +869,7 @@ async function bindFeishuGroup(): Promise<void> {
   
   // 添加新绑定
   for (const agent of agentsToBind) {
-    oldBindings.push({
+    const binding = {
       agentId: agent.id,
       match: {
         channel: 'feishu',
@@ -877,8 +877,12 @@ async function bindFeishuGroup(): Promise<void> {
           kind: 'group',
           id: groupId
         }
-      } as any  // 类型断言，允许 accountId 等额外字段
-    });
+      }
+    };
+    oldBindings.push(binding);
+    
+    // 记录每个 binding 的创建（用于重置时撤销）
+    configTracker.recordBindingCreate(binding);
   }
   
   config.bindings = oldBindings;

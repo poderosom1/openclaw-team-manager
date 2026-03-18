@@ -334,8 +334,8 @@ async function resetSystem(): Promise<{ success: boolean; message: string; backu
     }
 
     // 5.6 清理 openclaw.json 中的飞书群相关配置
-    // 重置应该无条件清理所有飞书群配置，而不是依赖 config_changes 记录
-    console.log(chalk.dim('  清理飞书群配置...'));
+    // 作为兜底机制：如果 config_changes 记录不完整，确保清理干净
+    console.log(chalk.dim('  清理飞书群配置（兜底）...'));
     const feishuConfigCleaned = cleanupFeishuGroupConfig();
     if (feishuConfigCleaned) {
       console.log(chalk.dim('  ✓ 已清理飞书群配置'));
