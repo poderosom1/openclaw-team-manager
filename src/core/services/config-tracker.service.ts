@@ -247,13 +247,39 @@ export function recordDirectoryCreate(dirPath: string, description?: string): vo
  */
 export function recordFeishuGroupBind(deptId: string, deptName: string, groupId: string, oldGroupId?: string | null): void {
   if (!currentSessionId) return;
+  
+  // Get current group config from openclaw.json for potential restoration
+  const configPath = getOpenClawJsonPath();
+  let groupConfig: Record<string, unknown> | undefined;
+  
+  try {
+    if (fs.existsSync(configPath)) {
+      const content = fs.readFileSync(configPath, 'utf-8');
+      const config = JSON.parse(content);
+      const channels = config.channels as Record<string, unknown> | undefined;
+      const feishuConfig = channels?.feishu as Record<string, unknown> | undefined;
+      const groups = feishuConfig?.groups as Record<string, unknown> | undefined;
+      
+      if (groups?.[groupId]) {
+        groupConfig = groups[groupId] as Record<string, unknown>;
+      }
+    }
+  } catch {
+    // Ignore errors
+  }
+  
   configChangeRepo.recordChange(currentSessionId, {
-    change_type: oldGroupId ? 'feishu_group_bind' : 'feishu_group_bind',
-    target_type: 'departments',
-    target_path: `departments[${deptId}].feishu_group_id`,
+    change_type: 'feishu_group_bind',
+    target_type: 'channels.feishu.groups',
+    target_path: `channels.feishu.groups[${groupId}]`,
     action: oldGroupId ? 'update' : 'add',
     old_value: oldGroupId || undefined,
-    new_value: groupId,
+    new_value: JSON.stringify({
+      groupId,
+      groupConfig,
+      deptId,
+      deptName
+    }),
     related_id: deptId,
     description: `绑定飞书群: ${deptName} → ${groupId}`
   });
@@ -264,12 +290,45 @@ export function recordFeishuGroupBind(deptId: string, deptName: string, groupId:
  */
 export function recordFeishuGroupUnbind(deptId: string, deptName: string, oldGroupId: string): void {
   if (!currentSessionId) return;
+  
+  // Get current group config from openclaw.json for potential restoration
+  const configPath = getOpenClawJsonPath();
+  let oldGroupConfig: Record<string, unknown> | undefined;
+  let oldGroupAllowFrom: string[] | undefined;
+  
+  try {
+    if (fs.existsSync(configPath)) {
+      const content = fs.readFileSync(configPath, 'utf-8');
+      const config = JSON.parse(content);
+      const channels = config.channels as Record<string, unknown> | undefined;
+      const feishuConfig = channels?.feishu as Record<string, unknown> | undefined;
+      const groups = feishuConfig?.groups as Record<string, unknown> | undefined;
+      
+      if (groups?.[oldGroupId]) {
+        oldGroupConfig = groups[oldGroupId] as Record<string, unknown>;
+      }
+      
+      // Also save the groupAllowFrom for restoration
+      if (feishuConfig?.groupAllowFrom && Array.isArray(feishuConfig.groupAllowFrom)) {
+        oldGroupAllowFrom = [...feishuConfig.groupAllowFrom as string[]];
+      }
+    }
+  } catch {
+    // Ignore errors
+  }
+  
   configChangeRepo.recordChange(currentSessionId, {
     change_type: 'feishu_group_unbind',
-    target_type: 'departments',
-    target_path: `departments[${deptId}].feishu_group_id`,
+    target_type: 'channels.feishu.groups',
+    target_path: `channels.feishu.groups[${oldGroupId}]`,
     action: 'remove',
-    old_value: oldGroupId,
+    old_value: JSON.stringify({
+      groupId: oldGroupId,
+      groupConfig: oldGroupConfig,
+      groupAllowFrom: oldGroupAllowFrom,
+      deptId,
+      deptName
+    }),
     related_id: deptId,
     description: `解绑飞书群: ${deptName} (${oldGroupId})`
   });
@@ -697,18 +756,169 @@ function revertDepartmentChange(change: configChangeRepo.ConfigChange): void {
     
     const deptId = change.related_id;
     
-    if (change.action === 'add') {
-      // Revert binding: clear group ID
-      departmentRepository.update(deptId, { feishu_group_id: null });
-    } else if (change.action === 'remove' && change.old_value) {
-      // Revert unbinding: restore group ID
-      departmentRepository.update(deptId, { feishu_group_id: change.old_value });
-    } else if (change.action === 'update' && change.old_value) {
-      // Revert update: restore old group ID
-      departmentRepository.update(deptId, { feishu_group_id: change.old_value });
+    if (change.change_type === 'feishu_group_bind') {
+      // Revert binding: clear group ID from database and clean up openclaw.json
+      if (change.action === 'add') {
+        // Binding was added, need to remove it
+        departmentRepository.update(deptId, { feishu_group_id: null });
+        
+        // Clean up openclaw.json group config
+        if (change.new_value) {
+          try {
+            const data = JSON.parse(change.new_value);
+            if (data.groupId) {
+              removeFeishuGroupConfig(data.groupId);
+            }
+          } catch {
+            // Ignore parse errors
+          }
+        }
+      } else if (change.action === 'update' && change.old_value) {
+        // Binding was updated, restore old group ID
+        departmentRepository.update(deptId, { feishu_group_id: change.old_value });
+      }
+    } else if (change.change_type === 'feishu_group_unbind') {
+      // Revert unbinding: restore group ID to database and restore openclaw.json config
+      if (change.action === 'remove' && change.old_value) {
+        try {
+          const data = JSON.parse(change.old_value);
+          
+          // Restore group ID to database
+          departmentRepository.update(deptId, { feishu_group_id: data.groupId });
+          
+          // Restore openclaw.json group config
+          restoreFeishuGroupConfig(data);
+        } catch {
+          // Ignore parse errors
+        }
+      }
     }
   } catch (e) {
     console.warn('撤销事业部变更失败:', e);
+  }
+}
+
+/**
+ * Remove feishu group config from openclaw.json
+ */
+function removeFeishuGroupConfig(groupId: string): void {
+  try {
+    const configPath = getOpenClawJsonPath();
+    if (!fs.existsSync(configPath)) return;
+    
+    const content = fs.readFileSync(configPath, 'utf-8');
+    const config = JSON.parse(content);
+    let configChanged = false;
+    
+    const channels = config.channels as Record<string, unknown> | undefined;
+    const feishuConfig = channels?.feishu as Record<string, unknown> | undefined;
+    
+    // Remove from groupAllowFrom
+    if (feishuConfig?.groupAllowFrom && Array.isArray(feishuConfig.groupAllowFrom)) {
+      const groupAllowFrom = feishuConfig.groupAllowFrom as string[];
+      const index = groupAllowFrom.indexOf(groupId);
+      if (index >= 0) {
+        groupAllowFrom.splice(index, 1);
+        configChanged = true;
+        console.log(`[重置] 已从群组白名单移除: ${groupId}`);
+      }
+    }
+    
+    // Remove group config
+    if (feishuConfig?.groups && typeof feishuConfig.groups === 'object') {
+      const groups = feishuConfig.groups as Record<string, unknown>;
+      if (groups[groupId]) {
+        delete groups[groupId];
+        configChanged = true;
+        console.log(`[重置] 已移除群组配置: ${groupId}`);
+      }
+    }
+    
+    // Remove bindings for this group
+    if (config.bindings && Array.isArray(config.bindings)) {
+      const originalLength = config.bindings.length;
+      config.bindings = config.bindings.filter(
+        (b: { match?: { channel?: string; peer?: { kind?: string; id?: string } } }) => {
+          const match = b.match;
+          return !(match?.channel === 'feishu' && 
+                   match?.peer?.kind === 'group' && 
+                   match?.peer?.id === groupId);
+        }
+      );
+      
+      if (config.bindings.length < originalLength) {
+        configChanged = true;
+        console.log(`[重置] 已移除 ${originalLength - config.bindings.length} 个群组绑定`);
+      }
+    }
+    
+    if (configChanged) {
+      fs.writeFileSync(configPath, JSON.stringify(config, null, 2), 'utf-8');
+    }
+  } catch (e) {
+    console.warn('移除飞书群组配置失败:', e);
+  }
+}
+
+/**
+ * Restore feishu group config to openclaw.json
+ */
+function restoreFeishuGroupConfig(data: { groupId: string; groupConfig?: Record<string, unknown>; groupAllowFrom?: string[] }): void {
+  try {
+    const configPath = getOpenClawJsonPath();
+    if (!fs.existsSync(configPath)) return;
+    
+    const content = fs.readFileSync(configPath, 'utf-8');
+    const config = JSON.parse(content);
+    let configChanged = false;
+    
+    // Ensure channels.feishu structure exists
+    if (!config.channels) config.channels = {};
+    const channels = config.channels as Record<string, unknown>;
+    
+    if (!channels.feishu) {
+      channels.feishu = {
+        enabled: true,
+        groupPolicy: 'allowlist'
+      };
+    }
+    const feishuConfig = channels.feishu as Record<string, unknown>;
+    
+    // Restore groupAllowFrom
+    if (data.groupAllowFrom) {
+      if (!feishuConfig.groupAllowFrom) {
+        feishuConfig.groupAllowFrom = [];
+      }
+      const groupAllowFrom = feishuConfig.groupAllowFrom as string[];
+      
+      for (const id of data.groupAllowFrom) {
+        if (!groupAllowFrom.includes(id)) {
+          groupAllowFrom.push(id);
+          configChanged = true;
+        }
+      }
+      
+      if (configChanged) {
+        console.log(`[重置] 已恢复群组白名单: ${data.groupId}`);
+      }
+    }
+    
+    // Restore group config (requireMention etc.)
+    if (data.groupConfig) {
+      if (!feishuConfig.groups) {
+        feishuConfig.groups = {};
+      }
+      const groups = feishuConfig.groups as Record<string, unknown>;
+      groups[data.groupId] = data.groupConfig;
+      configChanged = true;
+      console.log(`[重置] 已恢复群组配置: ${data.groupId}`);
+    }
+    
+    if (configChanged) {
+      fs.writeFileSync(configPath, JSON.stringify(config, null, 2), 'utf-8');
+    }
+  } catch (e) {
+    console.warn('恢复飞书群组配置失败:', e);
   }
 }
 

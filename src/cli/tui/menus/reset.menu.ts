@@ -8,7 +8,6 @@ import * as fs from 'fs';
 import * as path from 'path';
 import { tuiUtils } from '../index';
 import { getDatabasePath, getOpenClawJsonPath, getOpenClawRoot } from '../../../core/utils';
-import { restartGateway } from '../../../core/utils/openclaw-helper';
 import { getDatabase, closeDatabase } from '../../../db';
 import * as initSessionRepo from '../../../db/repositories/init-session.repo';
 import * as configChangeRepo from '../../../db/repositories/config-change.repo';
@@ -354,8 +353,8 @@ async function resetSystem(): Promise<{ success: boolean; message: string; backu
 
     // 7.5 检查并保留 main agent 配置（在 Gateway 重启前处理）
     // 如果 agents/main/ 目录存在（非 team-manager 创建的默认 agent），
-    // 但 agents.list 为空，需要添加 main agent 的默认配置
-    // 否则 Gateway 重启后会为 main agent 创建新的 workspace-main 目录
+    // 确保 agents.list 中有 main agent 配置
+    // 注意：不要修改任何 agent 的 default 属性
     const mainAgentDir = path.join(openClawRoot, 'agents', 'main');
     if (fs.existsSync(mainAgentDir)) {
       const configPath = getOpenClawJsonPath();
@@ -366,19 +365,18 @@ async function resetSystem(): Promise<{ success: boolean; message: string; backu
         if (!config.agents) config.agents = { list: [] };
         if (!config.agents.list) config.agents.list = [];
         
-        const agentsList = config.agents.list;
-        const mainAgent = agentsList.find((a: { id: string }) => a.id === 'main');
+        const agentsList = config.agents.list as Array<{ id: string; workspace?: string; agentDir?: string }>;
+        
+        // 如果 agents.list 中没有 main agent，添加配置（不设置 default）
+        const mainAgent = agentsList.find((a) => a.id === 'main');
         
         if (!mainAgent) {
-          // agents.list 中没有 main agent，添加默认配置
           const defaultWorkspace = config.agents?.defaults?.workspace || path.join(openClawRoot, 'workspace');
           agentsList.push({
             id: 'main',
-            default: true,
             workspace: defaultWorkspace,
             agentDir: path.join(mainAgentDir, 'agent')
           });
-          
           fs.writeFileSync(configPath, JSON.stringify(config, null, 2), 'utf-8');
           console.log(chalk.dim('  ✓ 已保留 main agent 配置'));
         }
@@ -392,17 +390,17 @@ async function resetSystem(): Promise<{ success: boolean; message: string; backu
     closeDatabase();
     console.log(chalk.dim('  ✓ 数据库连接已关闭'));
 
-    // 9. 重启 Gateway 以断开飞书长连接
+    // 9. 提示用户手动重启 Gateway 以断开飞书长连接
     // 飞书 WebSocket 连接存储在 Gateway 进程内存中，需要重启才能断开
-    console.log(chalk.dim('  重启 Gateway 以断开飞书长连接...'));
-    const restartResult = restartGateway();
-    if (restartResult.success) {
-      console.log(chalk.dim(`  ✓ ${restartResult.message}`));
-    } else {
-      console.log(chalk.yellow(`  ⚠ ${restartResult.message}`));
-    }
+    console.log(chalk.dim('\n  系统重置完成！\n'));
 
-    console.log(chalk.green('\n✓ 系统重置完成！工具将退出，请重新启动。'));
+    console.log(chalk.green('\n✓ 系统重置完成！'));
+    console.log(chalk.dim(`备份位置: ${backupPath}\n`));
+    
+    console.log(chalk.yellow('⚠️  请手动重启 Gateway 以断开飞书长连接：'));
+    console.log(chalk.cyan('    openclaw gateway restart\n'));
+    
+    console.log(chalk.dim('工具将退出，请重新启动。\n'));
     
     // 重置完成后退出进程
     process.exit(0);

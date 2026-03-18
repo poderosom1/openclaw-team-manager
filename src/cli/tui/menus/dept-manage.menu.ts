@@ -291,37 +291,38 @@ async function deleteDepartment(): Promise<void> {
     let deletedAgents = 0;
     const agentIds: string[] = [];
 
-    // Delete all Agents
+    // Delete all Agents - only call agentService.delete once per agent
+    // agentService.delete handles: config removal, bindings, directories, credentials
     for (const agent of agents) {
-      const workspacePath = path.join(getOpenClawRoot(), `workspace-${agent.id}`);
-      const agentDir = path.join(getOpenClawRoot(), 'agents', agent.id);
-      
-      if (fs.existsSync(workspacePath)) {
-        fs.rmSync(workspacePath, { recursive: true, force: true });
-      }
-      if (fs.existsSync(agentDir)) {
-        fs.rmSync(agentDir, { recursive: true, force: true });
-      }
-      
-      removeAgentFromConfig(agent.id);
-      agentService.delete(agent.id);
-      agentIds.push(agent.id);
-      deletedAgents++;
-    }
-
-    // Clean up feishu credentials for all deleted agents
-    if (agentIds.length > 0) {
-      const cleanupResult = cleanupFeishuCredentialsForAgents(agentIds);
-      if (cleanupResult.deleted.length > 0) {
-        console.log(chalk.dim(`  已清理 ${cleanupResult.deleted.length} 个飞书配对文件`));
+      const result = agentService.delete(agent.id);
+      if (result.success) {
+        agentIds.push(agent.id);
+        deletedAgents++;
+        console.log(chalk.dim(`  ✓ 已删除 Agent: ${agent.name} (${agent.id})`));
+      } else {
+        console.log(chalk.yellow(`  ⚠ 删除 Agent 失败: ${agent.name} - ${result.message}`));
       }
     }
 
-    // Delete team
-    deptService.delete(departmentId);
+    // Clean up feishu credentials for all deleted agents (already done in agentService.delete, but double-check)
+    // This is redundant but ensures cleanup if agentService.delete didn't clean up properly
+    // Note: agentService.delete already calls cleanupFeishuCredentialsForAgent internally
+
+    // Delete team (no agents left)
+    const deptResult = deptService.delete(departmentId);
+    if (!deptResult.success) {
+      tuiUtils.printError(deptResult.message);
+      return;
+    }
 
     console.log(chalk.green('\n✓ 团队已删除！'));
     console.log(chalk.dim(`  已删除 ${deletedAgents} 个 Agent\n`));
+    
+    // Show restart reminder if any agents were deleted
+    if (deletedAgents > 0) {
+      console.log(chalk.yellow('⚠️  请重启 Gateway 使飞书长连接断开：'));
+      console.log(chalk.cyan('    openclaw gateway restart\n'));
+    }
 
   } catch (error) {
     tuiUtils.printError(`删除失败: ${error instanceof Error ? error.message : String(error)}`);

@@ -480,6 +480,9 @@ async function deleteAgent(): Promise<void> {
   const result = agentService.delete(agentId);
   if (result.success) {
     tuiUtils.printSuccess(result.message);
+    if (result.restartReminder) {
+      console.log(chalk.yellow(`\n${result.restartReminder}\n`));
+    }
   } else {
     tuiUtils.printError(result.message);
   }

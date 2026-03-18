@@ -247,6 +247,9 @@ Add whatever helps you do your job.
  * 
  * After creating Agent, need to add it to openclaw.json config
  * Follows official standard format
+ * 
+ * Note: Never set default=true for any agent created by team-manager
+ * Preserve the original default agent if exists
  */
 export function syncOpenClawConfig(agent: any): { success: boolean; message: string } {
   try {
@@ -305,11 +308,11 @@ export function syncOpenClawConfig(agent: any): { success: boolean; message: str
     const existingIndex = config.agents.list.findIndex((a: { id: string }) => a.id === agent.id);
 
     // Create Agent config item (official standard format)
+    // Note: Never set default=true, preserve original default agent
     const agentConfig: {
       id: string;
       workspace: string;
       agentDir: string;
-      default?: boolean;
       name?: string;
     } = {
       id: agent.id,
@@ -318,16 +321,15 @@ export function syncOpenClawConfig(agent: any): { success: boolean; message: str
       name: agent.name
     };
 
-    // If assistant, set as default
-    if (agent.role === 'assistant') {
-      agentConfig.default = true;
-    }
-
     if (existingIndex >= 0) {
-      // Update existing config
+      // Update existing config, but preserve default if it was set
+      const existingDefault = config.agents.list[existingIndex].default;
       config.agents.list[existingIndex] = agentConfig;
+      if (existingDefault) {
+        config.agents.list[existingIndex].default = existingDefault;
+      }
     } else {
-      // Add new config
+      // Add new config (without default)
       config.agents.list.push(agentConfig);
     }
 
@@ -379,92 +381,15 @@ export function removeAgentFromConfig(agentId: string): { success: boolean; mess
 }
 
 /**
- * Restart OpenClaw Gateway
+ * Get Gateway restart reminder message
  * 
- * Used to disconnect Feishu WebSocket connections after deleting agents/departments
- * Feishu WebSocket connections are stored in Gateway process memory (wsClients Map)
- * Only restarting Gateway can disconnect them
+ * After deleting agents/departments, Feishu WebSocket connections
+ * are still stored in Gateway process memory. Manual restart is required.
  * 
- * @param options Optional configuration
- * @returns Result of the restart operation
+ * @returns Reminder message for user to restart Gateway manually
  */
-export function restartGateway(options?: { 
-  silent?: boolean;
-  timeout?: number;
-}): { success: boolean; message: string; restarted: boolean } {
-  const { silent = false, timeout = 60000 } = options || {};
-  
-  try {
-    const { execSync } = require('child_process');
-    
-    // 1. 停止 Gateway
-    console.log('[Gateway] 正在停止服务...');
-    try {
-      execSync('openclaw gateway stop', { 
-        stdio: 'pipe',
-        timeout: 15000 
-      });
-    } catch (e) {
-      // 忽略停止错误，继续检查状态
-      console.log('[Gateway] stop 命令执行完成（可能有警告）');
-    }
-    
-    // 2. 等待服务完全停止（最多等待 10 秒）
-    console.log('[Gateway] 等待服务停止...');
-    let stopped = false;
-    const waitStart = Date.now();
-    const maxWait = 10000;
-    
-    while (!stopped && (Date.now() - waitStart) < maxWait) {
-      try {
-        const statusResult = execSync('openclaw gateway status', { 
-          stdio: 'pipe',
-          timeout: 5000 
-        }).toString();
-        
-        if (statusResult.includes('not running') || statusResult.includes('stopped')) {
-          stopped = true;
-          console.log('[Gateway] 服务已停止');
-        } else {
-          // 等待 500ms 后重试
-          const waitMs = 500;
-          const start = Date.now();
-          while (Date.now() - start < waitMs) {
-            // 同步等待
-          }
-        }
-      } catch {
-        // status 命令失败可能意味着服务已停止
-        stopped = true;
-        console.log('[Gateway] 服务已停止（无法获取状态）');
-      }
-    }
-    
-    if (!stopped) {
-      console.log('[Gateway] 警告：服务可能未完全停止');
-    }
-    
-    // 3. 启动 Gateway
-    console.log('[Gateway] 正在启动服务...');
-    execSync('openclaw gateway start', { 
-      stdio: silent ? 'pipe' : 'inherit',
-      timeout 
-    });
-    
-    return { 
-      success: true, 
-      message: 'Gateway 已重启，飞书长连接已断开', 
-      restarted: true 
-    };
-  } catch (error) {
-    // Gateway 可能未作为服务运行，尝试提示用户手动重启
-    const errorMsg = error instanceof Error ? error.message : String(error);
-    return { 
-      success: false, 
-      message: `无法自动重启 Gateway，请手动执行: openclaw gateway restart (${errorMsg})`, 
-      restarted: false 
-    };
-  }
+export function getGatewayRestartReminder(): string {
+  return '⚠️  请重启 Gateway 使飞书长连接断开：openclaw gateway restart';
 }
 
 /**

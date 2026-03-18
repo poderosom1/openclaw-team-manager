@@ -7,7 +7,8 @@ import { departmentRepository } from '../../db/repositories/dept.repo';
 import { agentRepository } from '../../db/repositories/agent.repo';
 import { Department } from '../models/types';
 import { generateDeptId, getOpenClawJsonPath } from '../utils';
-import { restartGateway } from '../utils/openclaw-helper';
+import { getGatewayRestartReminder } from '../utils/openclaw-helper';
+import * as configTracker from './config-tracker.service';
 
 export class DeptService {
   /**
@@ -47,8 +48,10 @@ export class DeptService {
   /**
    * Delete department (team)
    * Note: Must delete all agents in the department first
+   * 
+   * @returns success, message, and restartReminder if Gateway restart is needed
    */
-  delete(id: string): { success: boolean; message: string } {
+  delete(id: string): { success: boolean; message: string; restartReminder?: string } {
     // Check if there are agents
     const agents = agentRepository.findByDepartment(id);
     if (agents.length > 0) {
@@ -69,17 +72,21 @@ export class DeptService {
 
     departmentRepository.deleteDept(id);
 
-    // Restart Gateway to disconnect Feishu WebSocket connections
-    const restartResult = restartGateway({ silent: true });
-    if (!restartResult.success) {
-      console.log(`[团队删除] 警告: ${restartResult.message}`);
-    }
-
-    return { success: true, message: '团队已删除' };
+    // Return success with restart reminder (Gateway restart is needed to disconnect Feishu WebSocket)
+    return { 
+      success: true, 
+      message: '团队已删除',
+      restartReminder: getGatewayRestartReminder()
+    };
   }
 
   /**
-   * Remove feishu group binding from openclaw.json bindings
+   * Remove feishu group binding from openclaw.json
+   * 
+   * Cleans up:
+   * 1. bindings - remove group bindings for this groupId
+   * 2. channels.feishu.groupAllowFrom - remove groupId from whitelist
+   * 3. channels.feishu.groups[groupId] - remove group-specific config
    * 
    * This is user-initiated operation, delete binding directly without recording to config_changes
    * Reset will not restore user-deleted content
@@ -91,7 +98,9 @@ export class DeptService {
 
       const content = fs.readFileSync(configPath, 'utf-8');
       const config = JSON.parse(content);
+      let configChanged = false;
 
+      // 1. Remove bindings for this group
       if (config.bindings && Array.isArray(config.bindings)) {
         const originalLength = config.bindings.length;
         config.bindings = config.bindings.filter(
@@ -104,8 +113,41 @@ export class DeptService {
         );
         
         if (config.bindings.length < originalLength) {
-          fs.writeFileSync(configPath, JSON.stringify(config, null, 2), 'utf-8');
+          configChanged = true;
+          console.log(`[飞书群解绑] 已移除 ${originalLength - config.bindings.length} 个绑定记录`);
         }
+      }
+
+      // 2. Remove groupId from groupAllowFrom whitelist
+      const channels = config.channels as Record<string, unknown> | undefined;
+      const feishuConfig = channels?.feishu as Record<string, unknown> | undefined;
+      
+      if (feishuConfig?.groupAllowFrom && Array.isArray(feishuConfig.groupAllowFrom)) {
+        const groupAllowFrom = feishuConfig.groupAllowFrom as string[];
+        const originalLength = groupAllowFrom.length;
+        feishuConfig.groupAllowFrom = groupAllowFrom.filter(
+          (id: string) => id !== groupId
+        );
+        
+        if ((feishuConfig.groupAllowFrom as string[]).length < originalLength) {
+          configChanged = true;
+          console.log(`[飞书群解绑] 已从白名单移除群: ${groupId}`);
+        }
+      }
+
+      // 3. Remove group-specific config (requireMention, etc.)
+      if (feishuConfig?.groups && typeof feishuConfig.groups === 'object') {
+        const groups = feishuConfig.groups as Record<string, unknown>;
+        if (groups[groupId]) {
+          delete groups[groupId];
+          configChanged = true;
+          console.log(`[飞书群解绑] 已移除群配置: ${groupId}`);
+        }
+      }
+
+      // Save config if any changes were made
+      if (configChanged) {
+        fs.writeFileSync(configPath, JSON.stringify(config, null, 2), 'utf-8');
       }
     } catch (error) {
       console.warn(`警告：移除飞书群绑定失败: ${error}`);
@@ -121,21 +163,29 @@ export class DeptService {
 
   /**
    * Unbind feishu group (user-initiated operation)
+   * 
+   * @returns success, message, and restartReminder if Gateway restart is needed
    */
-  unbindFeishuGroup(id: string): { success: boolean; message: string } {
+  unbindFeishuGroup(id: string): { success: boolean; message: string; restartReminder?: string } {
     const dept = departmentRepository.findById(id);
-    if (dept?.feishu_group_id) {
-      this.removeFeishuGroupBinding(dept.feishu_group_id);
+    const oldGroupId = dept?.feishu_group_id;
+    
+    if (oldGroupId) {
+      // Record the unbinding for reset to potentially restore
+      configTracker.recordFeishuGroupUnbind(id, dept?.name || id, oldGroupId);
+      
+      // Clean up openclaw.json bindings and group config
+      this.removeFeishuGroupBinding(oldGroupId);
     }
+    
     departmentRepository.updateDept(id, { feishu_group_id: null });
 
-    // Restart Gateway to disconnect Feishu WebSocket connections
-    const restartResult = restartGateway({ silent: true });
-    if (!restartResult.success) {
-      console.log(`[团队解绑] 警告: ${restartResult.message}`);
-    }
-
-    return { success: true, message: '飞书群已解绑' };
+    // Return success with restart reminder (Gateway restart is needed to disconnect Feishu WebSocket)
+    return { 
+      success: true, 
+      message: '飞书群已解绑',
+      restartReminder: getGatewayRestartReminder()
+    };
   }
 
   /**

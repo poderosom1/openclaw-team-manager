@@ -16,7 +16,7 @@ import {
   removeAgentFromConfig,
   createAgentDirectories,
   createAgentFiles,
-  restartGateway
+  getGatewayRestartReminder
 } from '../utils/openclaw-helper';
 import * as configTracker from './config-tracker.service';
 import { cleanupFeishuCredentialsForAgent } from '../utils/credentials-cleanup';
@@ -207,8 +207,10 @@ export class AgentService {
    * - openclaw.json config
    * - Bindings
    * - Feishu credentials (allowFrom files)
+   * 
+   * @returns success, message, and restartReminder if Gateway restart is needed
    */
-  delete(id: string): { success: boolean; message: string } {
+  delete(id: string): { success: boolean; message: string; restartReminder?: string } {
     // Cannot delete assistant
     const agent = agentRepository.findById(id);
     if (!agent) {
@@ -245,13 +247,12 @@ export class AgentService {
     // Delete database record
     agentRepository.delete(id);
 
-    // Restart Gateway to disconnect Feishu WebSocket connections
-    const restartResult = restartGateway({ silent: true });
-    if (!restartResult.success) {
-      console.log(`[Agent删除] 警告: ${restartResult.message}`);
-    }
-
-    return { success: true, message: 'Agent已删除' };
+    // Return success with restart reminder (Gateway restart is needed to disconnect Feishu WebSocket)
+    return { 
+      success: true, 
+      message: 'Agent已删除',
+      restartReminder: getGatewayRestartReminder()
+    };
   }
 
   /**

@@ -9,7 +9,6 @@ import * as path from 'path';
 import { tuiUtils } from '../index';
 import { agentService } from '../../../core/services';
 import { getOpenClawJsonPath, getOpenClawRoot } from '../../../core/utils';
-import { restartGateway } from '../../../core/utils/openclaw-helper';
 import * as configTracker from '../../../core/services/config-tracker.service';
 
 /**
@@ -423,16 +422,22 @@ async function addFeishuBot(): Promise<void> {
   console.log(chalk.dim('  • 添加事件：im.message.receive_v1'));
   console.log(chalk.dim('  • 保存配置\n'));
   
-  console.log(chalk.bold('步骤 3：创建版本'));
+  console.log(chalk.bold('步骤 3：配置消息卡片回调（飞书开放平台）'));
+  console.log(chalk.dim('  • 进入「消息卡片」→「回调配置」页面'));
+  console.log(chalk.dim('  • 开启「使用长连接接收事件」开关'));
+  console.log(chalk.dim('  • 保存配置'));
+  console.log(chalk.dim('  说明：用于接收消息卡片按钮点击等交互事件\n'));
+  
+  console.log(chalk.bold('步骤 4：创建版本'));
   console.log(chalk.dim('  • 进入「版本管理与发布」页面'));
   console.log(chalk.dim('  • 点击「创建版本」，填写版本号和更新说明'));
   console.log(chalk.dim('  • 保存版本\n'));
   
-  console.log(chalk.bold('步骤 4：提交审核'));
+  console.log(chalk.bold('步骤 5：提交审核'));
   console.log(chalk.dim('  • 选择刚创建的版本，点击「申请上线」'));
   console.log(chalk.dim('  • 等待管理员审批（企业自建应用通常自动通过）\n'));
   
-  console.log(chalk.bold('步骤 5：用户配对'));
+  console.log(chalk.bold('步骤 6：用户配对'));
   console.log(chalk.dim('  • 用户在飞书搜索并添加机器人'));
   console.log(chalk.dim('  • 用户发送私聊消息，机器人返回配对码'));
   console.log(chalk.dim('  • 使用本工具「配对管理」输入配对码完成授权\n'));
@@ -663,13 +668,9 @@ async function deleteFeishuBot(): Promise<void> {
   // 保存
   fs.writeFileSync(configPath, JSON.stringify(config, null, 2), 'utf-8');
 
-  // 重启 Gateway 以断开飞书长连接
-  const restartResult = restartGateway({ silent: true });
-  if (!restartResult.success) {
-    console.log(chalk.yellow(`\n⚠️ ${restartResult.message}`));
-  }
-
-  console.log(chalk.green('\n✓ 飞书 Bot 配置已删除\n'));
+  console.log(chalk.green('\n✓ 飞书 Bot 配置已删除'));
+  console.log(chalk.yellow('\n⚠️  请重启 Gateway 使飞书长连接断开：'));
+  console.log(chalk.cyan('    openclaw gateway restart\n'));
   await tuiUtils.waitForKey();
 }
 
@@ -1392,9 +1393,6 @@ class GatewayClient {
     if (!result.success) {
       return { success: false, error: result.error };
     }
-    
-    // 调试：打印原始返回
-    console.log('DEBUG node.pair.list result:', JSON.stringify(result.result, null, 2));
     
     // 返回格式: { pending: [...], paired: [...] }
     const response = result.result as { pending?: Array<{ requestId: string; displayName?: string; platform?: string }>; paired?: unknown[] };
