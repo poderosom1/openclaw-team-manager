@@ -1,6 +1,6 @@
 {
   "name": "openclaw-team-manager",
-  "version": "0.1.4",
+  "version": "0.1.5",
   "description": "Multi-Agent Collaboration Framework - CLI Management Tool (Basic Version: Agent Creation + Feishu Binding)",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
