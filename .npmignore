@@ -1,0 +1,26 @@
+# Source files (only publish compiled code)
+src/
+*.ts
+tsconfig.json
+
+# Development
+.git/
+.gitignore
+.idea/
+.vscode/
+
+# Test
+coverage/
+*.test.js
+*.spec.js
+jest.config.js
+
+# Build scripts
+tsconfig.json
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Logs
+*.log
